@@ -1,0 +1,30 @@
+{
+    "name": "pentagonalproject/client-17-ir",
+    "description": "Project for client",
+    "type": "project",
+    "require": {
+        "php": ">= 5.6",
+        "ext-curl": "*",
+        "ext-intl": "*",
+        "ext-pdo" : "*",
+        "pentagonal/whois": "v0.1-alpha",
+        "guzzlehttp/guzzle": "^6",
+        "doctrine/dbal": "^2.5",
+        "php-di/php-di": "^5"
+    },
+    "require-dev": {
+        "squizlabs/php_codesniffer": "2.*"
+    },
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "pentagonal",
+            "email": "org@pentagonal.org"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "PentagonalProject\\Client17Ir\\Core\\": "app/Core/"
+        }
+    }
+}
