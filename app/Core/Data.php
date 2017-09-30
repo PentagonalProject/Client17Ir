@@ -26,11 +26,25 @@ class Data
     const COLUMN_INFO_RANK = 'info_rank';
 
     /**
+     * @var Db
+     */
+    protected $database;
+
+    /**
      * Cache constructor.
      */
     public function __construct()
     {
+        $this->database = DI::get(Db::class);
         $this->init();
+    }
+
+    /**
+     * @return Db
+     */
+    public function getDatabase()
+    {
+        return $this->database;
     }
 
     /**
@@ -38,8 +52,7 @@ class Data
      */
     protected function init()
     {
-        $db = DI::get(Db::class);
-        if (!$db->tablesExist(self::TABLE_NAME)) {
+        if (!$this->database->tablesExist(self::TABLE_NAME)) {
             $table = new Table(self::TABLE_NAME);
             $table
                 ->addColumn(self::COLUMN_ID, Type::BIGINT)
@@ -101,7 +114,7 @@ class Data
                 ->addUniqueIndex([self::COLUMN_DOMAIN_NAME]);
 
             // create table
-            $db->getSchemaManager()->createTable($table);
+            $this->database->getSchemaManager()->createTable($table);
         }
     }
 }

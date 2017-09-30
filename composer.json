@@ -10,7 +10,8 @@
         "pentagonal/whois": "v0.1-alpha",
         "guzzlehttp/guzzle": "^6",
         "doctrine/dbal": "^2.5",
-        "php-di/php-di": "^5"
+        "php-di/php-di": "^5",
+        "wa72/htmlpagedom": "^1.3"
     },
     "require-dev": {
         "squizlabs/php_codesniffer": "2.*"

@@ -1,5 +1,6 @@
 <?php
 return [
+    'api_key' => '',
     'db' => [
         'dbdriver' => 'mysql',
         'dbuser'  => 'root',
