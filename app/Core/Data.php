@@ -48,6 +48,30 @@ class Data
     }
 
     /**
+     * @param string $domainName
+     *
+     * @return bool|null
+     */
+    public function isDomainExists($domainName)
+    {
+        if (!is_string($domainName)) {
+            return null;
+        }
+        $domainName = trim(strtolower($domainName));
+        if ($domainName == '') {
+            return null;
+        }
+        $qb = $this->getDatabase()->createQueryBuilder();
+        $stmt = $qb
+            ->select('1')
+            ->from(self::TABLE_NAME)
+            ->where(self::COLUMN_DOMAIN_NAME . '= :domainName')
+            ->setParameter(':domainName', $domainName)
+            ->execute();
+        return $stmt->rowCount() > 0;
+    }
+
+    /**
      * initial
      */
     protected function init()

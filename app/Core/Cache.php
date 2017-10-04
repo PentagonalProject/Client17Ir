@@ -46,7 +46,7 @@ class Cache implements CacheInterface
      */
     protected function sanitySet($data)
     {
-        return $data;
+        return Sanitizer::maybeSerialize($data);
     }
 
     /**
@@ -56,7 +56,7 @@ class Cache implements CacheInterface
      */
     protected function sanityResult($data)
     {
-        return $data;
+        return Sanitizer::maybeUnSerialize($data);
     }
 
     /**
@@ -85,6 +85,8 @@ class Cache implements CacheInterface
                 ->setNotnull(true);
             $db->getSchemaManager()->createTable($table);
         }
+        //
+        $this->cleanExpired();
     }
 
     /**
@@ -153,7 +155,7 @@ class Cache implements CacheInterface
                     ':name'    => $identifier,
                     ':content' => $this->sanitySet($data),
                     ':created' => date('Y-m-d H:i:s'),
-                    ':expired' => date('Y-m-d H:i:s', time() + $timeout),
+                    ':expired' => time() + $timeout,
                 ])->execute();
         }
 
@@ -163,11 +165,11 @@ class Cache implements CacheInterface
             ->set(self::COLUMN_CONTENT, ':content')
             ->set(self::COLUMN_CREATED_DATE, ':created')
             ->set(self::COLUMN_EXPIRED_TIME, ':expired')
-            ->where($identifier . '=:identity')
+            ->where(self::COLUMN_IDENTIFIER . '=:identity')
             ->setParameters([
                 ':content' => $this->sanitySet($data),
                 ':created' => date('Y-m-d H:i:s'),
-                ':expired' => date('Y-m-d H:i:s', time() + $timeout),
+                ':expired' =>time() + $timeout,
                 ':identity' => $identifier
             ])->execute();
     }
@@ -198,14 +200,37 @@ class Cache implements CacheInterface
         }
 
         if (is_array($fetch) && isset($fetch[self::COLUMN_CONTENT])) {
-            $expired = @strtotime($fetch[self::COLUMN_EXPIRED_TIME]);
+            $expired = is_numeric($fetch[self::COLUMN_EXPIRED_TIME])
+                ? $fetch[self::COLUMN_EXPIRED_TIME]
+                : @strtotime($fetch[self::COLUMN_EXPIRED_TIME]);
             if (!$expired || $expired < time()) {
                 $this->delete($identifier);
                 return null;
             }
+
             return $this->sanityResult($fetch[self::COLUMN_CONTENT]);
         }
 
         return null;
+    }
+
+    /**
+     * clean expired
+     */
+    public function cleanExpired()
+    {
+        /**
+         * @var Db $db
+         */
+        $db = DI::get(Db::class);
+        $time = @time();
+        $stmt = $this
+            ->createQueryBuilder()
+            ->delete(self::TABLE_NAME)
+            ->where($db->quoteIdentifier(self::COLUMN_EXPIRED_TIME) . ' < ' . $time)
+            ->execute();
+        if ($stmt instanceof Statement) {
+            $stmt->closeCursor();
+        }
     }
 }

@@ -19,6 +19,8 @@ class TransportIR
 
     const CAPTCHA_IN = 'http://2captcha.com/in.php';
     const CAPTCHA_RES = 'http://2captcha.com/res.php';
+    const WAIT_TIME = 6;
+    public $cacheTime = 86400;
 
     /**
      * @var string
@@ -82,10 +84,17 @@ class TransportIR
         ]);
     }
 
-    private function addVerbose($message)
+    /**
+     * @param $message
+     * @param bool $withNewLine
+     */
+    public function addVerbose($message, $withNewLine = true)
     {
         if ($this->cliVerbose) {
-            echo "{$message}\n";
+            echo "{$message}";
+            if ($withNewLine) {
+                echo "\n";
+            }
         }
     }
 
@@ -201,6 +210,11 @@ class TransportIR
     const FAIL_CAPTCHA  = 'fail captcha';
     const ZERO_BALANCE  = 'No Balance';
 
+    /**
+     * @param string $id
+     *
+     * @return string
+     */
     protected function getCaptcha($id)
     {
         if (!empty($this->captchaResolved)) {
@@ -223,10 +237,12 @@ class TransportIR
         while (!$body->eof()) {
             $data .= $body->getContents();
         }
+        $this->addVerbose("Data Received : {$data}");
         $data = json_decode($data, true);
         if (!is_array($data) || empty($data['request'])) {
             return self::FAIL_CAPTCHA;
         }
+
         $data = @trim($data['request']);
         if (stripos($data, '_NOT_READY') !== false) {
             return self::NOT_RESOLVED;
@@ -239,8 +255,8 @@ class TransportIR
         if (strpos($data, '_') !== false) {
             return self::ERROR_CAPTCHA;
         }
-
-        return self::FAIL_CAPTCHA;
+        $this->addVerbose("Captcha found : {$data}");
+        return $data;
     }
 
     /**
@@ -257,21 +273,27 @@ class TransportIR
         $this->addVerbose("Get resolved captcha from Captcha Resolver API with id: ".$id);
         $counted = 0;
         $resolved = null;
-        while ($counted < 6) {
+        while ($counted < 20) {
             $resolved = $this->getCaptcha($id);
             $counted++;
             if ($resolved == self::FAIL_CAPTCHA || $resolved == self::NOT_RESOLVED) {
-                sleep(5);
                 if ($resolved == self::NOT_RESOLVED) {
-                    $this->addVerbose("Retrying to call captcha resolve with ID : " . $id);
+                    $this->addVerbose(
+                        "Retrying to call captcha resolve with ID : "
+                        . $id
+                        . '. Waiting for ' .self::WAIT_TIME. ' seconds'
+                    );
                 } else {
-                    $this->addVerbose("Fail to get captcha resolve. Retrying...");
+                    $this->addVerbose(
+                        "Fail to get captcha resolve, Waiting for ".self::WAIT_TIME." seconds. Retrying..."
+                    );
                 }
+                sleep(self::WAIT_TIME);
                 continue;
             } elseif ($resolved == self::ZERO_BALANCE) {
                 throw new \Exception("No Credit On Service! Please update Balance");
             } elseif ($resolved == self::ERROR_CAPTCHA) {
-                throw new \Exception("Can Not get Data Captcha! Deparsing FAILED!");
+                throw new \Exception("Can Not get Data Captcha! De-parsing FAILED!");
             }
             break;
         }
@@ -309,8 +331,29 @@ class TransportIR
         return $data;
     }
 
+    /**
+     * @param string $stringData
+     *
+     * @return array
+     */
     private function parse($stringData)
     {
+        $key = sha1($stringData);
+        $error_report = error_reporting();
+        error_reporting(0);
+
+        /**
+         * @var Cache $cache
+         */
+        $cache = DI::get(Cache::class);
+        if ($cache->exist($key)) {
+            $data = $cache->get($key);
+            if (is_array($data)) {
+                return $data;
+            }
+            $cache->delete($key);
+        }
+
         $this->addVerbose("Parsing result!");
         $data = [];
         $crawl = HtmlPageCrawler::create($stringData);
@@ -336,9 +379,17 @@ class TransportIR
             if ($domainOne->count()) {
                 $domainOne = strtolower(trim($domainOne->html()));
                 $dateOld =  trim($tdOne->nextAll()->first()->text());
+                $dateOld = $dateOld ? preg_replace(
+                    [
+                        '/([\-])\s+/',
+                        '/(\s)+/'
+                    ],
+                    '$1',
+                    $dateOld
+                ) : $dateOld;
                 $date = @strtotime($dateOld);
                 $date = $date?: $dateOld;
-                $data[$domainOne] = date('Y-m-d H:i:s', $date);
+                $data[$domainOne] = @date('Y-m-d H:i:s', $date)?: date('Y-m-d H:i:s');
             }
 
             $tdTwo     = $td->eq(1)->nextAll();
@@ -346,12 +397,24 @@ class TransportIR
             if ($domainTwo->count()) {
                 $domainTwo = strtolower(trim($domainTwo->html()));
                 $dateOld =  trim($tdTwo->nextAll()->first()->text());
+                $dateOld = $dateOld ? preg_replace(
+                    [
+                        '/([\-])\s+/',
+                        '/(\s)+/'
+                    ],
+                    '$1',
+                    $dateOld
+                ) : $dateOld;
                 $date = @strtotime($dateOld);
                 $date = $date?: $dateOld;
-                $data[$domainTwo] = @date('Y-m-d H:i:s', $date);
+                $data[$domainTwo] = @date('Y-m-d H:i:s', $date) ?: date('Y-m-d H:i:s');
             }
         });
-
+        if (!empty($data)) {
+            $cache->put($key, $data, 3600*24*7);
+        }
+        // set error report
+        error_reporting($error_report);
         return $data;
     }
 
@@ -362,6 +425,19 @@ class TransportIR
     public function getWebPageDomainList()
     {
         try {
+            $key = sha1(self::BASE_URI);
+            /**
+             * @var Cache $cache
+             */
+            $cache = DI::get(Cache::class);
+            if ($cache->exist($key)) {
+                $data = $cache->get($key);
+                if (is_string($data)) {
+                    return $this->parse($data);
+                }
+                $cache->delete($key);
+            }
+
             $resolved = $this->requestGetCaptcha();
             if ($resolved === null || trim($resolved) == '') {
                 throw new \Exception('Can Not Get Data');
@@ -370,7 +446,14 @@ class TransportIR
             $data = $this->requestDataFromIr(trim($resolved));
             // temp
             $this->addVerbose("Requesting domain list with existing succeed!");
-            return $this->parse($data);
+            $result = $this->parse($data);
+            if (!empty($result)) {
+                if (!is_int($this->cacheTime)) {
+                    $this->cacheTime = 86400;
+                }
+                $cache->put($key, $data, $this->cacheTime);
+            }
+            return $result;
         } catch (\Exception $e) {
             throw $e;
         }
