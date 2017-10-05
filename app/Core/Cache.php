@@ -169,7 +169,7 @@ class Cache implements CacheInterface
             ->setParameters([
                 ':content' => $this->sanitySet($data),
                 ':created' => date('Y-m-d H:i:s'),
-                ':expired' =>time() + $timeout,
+                ':expired' => time() + $timeout,
                 ':identity' => $identifier
             ])->execute();
     }

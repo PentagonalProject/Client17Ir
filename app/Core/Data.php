@@ -13,7 +13,8 @@ class Data
     const TABLE_NAME = 'ir_whois_data';
 
     const COLUMN_ID = 'id';
-    const COLUMN_DOMAIN_NAME = 'ir_domain_name';
+    const COLUMN_DOMAIN_NAME  = 'ir_domain_name';
+    const COLUMN_DATE_FREE    = 'date_free';
     const COLUMN_DATE_CREATED = 'date_created';
     const COLUMN_COM = 'is_com';
     const COLUMN_NET = 'is_net';
@@ -88,6 +89,10 @@ class Data
                 ->setNotnull(true)
                 ->setLength(255);
             $table
+                ->addColumn(self::COLUMN_DATE_FREE, Type::DATE)
+                ->setNotnull(true)
+                ->setDefault('1990-00-00 00:00:00');
+            $table
                 ->addColumn(self::COLUMN_DATE_CREATED, Type::DATE)
                 ->setNotnull(true)
                 ->setDefault('1990-00-00 00:00:00');
@@ -115,22 +120,22 @@ class Data
             $table
                 ->addColumn(self::COLUMN_COM_RANK, Type::BIGINT)
                 ->setNotnull(false)
-                ->setDefault(0)
+                ->setDefault(null)
                 ->setLength(10);
             $table
                 ->addColumn(self::COLUMN_NET_RANK, Type::BIGINT)
                 ->setNotnull(false)
-                ->setDefault(0)
+                ->setDefault(null)
                 ->setLength(10);
             $table
                 ->addColumn(self::COLUMN_ORG_RANK, Type::BIGINT)
                 ->setNotnull(false)
-                ->setDefault(0)
+                ->setDefault(null)
                 ->setLength(10);
             $table
                 ->addColumn(self::COLUMN_INFO_RANK, Type::BIGINT)
                 ->setNotnull(false)
-                ->setDefault(0)
+                ->setDefault(null)
                 ->setLength(10);
 
             $table

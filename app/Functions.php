@@ -31,7 +31,13 @@ function isDomainRegistered($domainName)
         $wh = who()->getWhoIs($domainName);
         $wh = $wh->getArrayCopy();
         $wh = reset($wh);
-        if ($wh && is_string($wh) && preg_match('/Registr(ar|y)\s|Name\s+Server/i', who()->cleanResultData($wh))) {
+        $clean = who()->cleanResultData($wh);
+        if ($wh
+            && is_string($wh)
+            && stripos(trim($clean), 'No match for') !== 0
+            && preg_match('/Registr(ar|y)\s|Registrar\s*\:/', $clean)
+            && preg_match('/Name\s+Server\s*\:/i', $clean)
+        ) {
             return true;
         }
         return false;
@@ -72,6 +78,16 @@ function cachePut($key, $value, $expire = 3600)
 function cacheGet($key)
 {
     return cache()->get($key);
+}
+
+/**
+ * @param string $key
+ *
+ * @return bool
+ */
+function cacheExist($key)
+{
+    return cache()->exist($key);
 }
 
 /**

@@ -1,10 +1,14 @@
 <?php
 return [
-    'api_key' => 'ff5f98b9ce3e69da69335a8f269825ec',
+    'api_key' => '',
+    'debug' => true,
     'db' => [
         'dbdriver' => 'mysql',
+        // database username
         'dbuser'  => 'root',
+        // database password
         'dbpass'  => 'mysql',
+        // database name
         'dbname'  => 'project_ir',
     ]
 ];
