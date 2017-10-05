@@ -28,19 +28,7 @@ function &who()
 function isDomainRegistered($domainName)
 {
     try {
-        $wh = who()->getWhoIs($domainName);
-        $wh = $wh->getArrayCopy();
-        $wh = reset($wh);
-        $clean = who()->cleanResultData($wh);
-        if ($wh
-            && is_string($wh)
-            && stripos(trim($clean), 'No match for') !== 0
-            && preg_match('/Registr(ar|y)\s|Registrar\s*\:/', $clean)
-            && preg_match('/Name\s+Server\s*\:/i', $clean)
-        ) {
-            return true;
-        }
-        return false;
+        return who()->isDomainRegistered($domainName);
     } catch (\Exception $e) {
         return null;
     }
