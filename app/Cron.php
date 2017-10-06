@@ -1,12 +1,25 @@
 <?php
+/**
+ * This file is based on file cron task worker
+ * This is use procedural step
+ *
+ * 1. validate config
+ * 2. Getting domain .ir list
+ * 3. Checking Domain Availibility
+ * 4. Getting Domain ALEXA Rank
+ * 5. Getting Backlink From Google
+ */
 namespace PentagonalProject\Client17Ir;
 
 use PentagonalProject\Client17Ir\Core\Config;
 use PentagonalProject\Client17Ir\Core\DI;
 use PentagonalProject\Client17Ir\Core\TransportIR;
 
-require __DIR__ . '/../vendor/autoload.php';
-require_once __DIR__ .'/Functions.php';
+# include these files
+require __DIR__ . '/../vendor/autoload.php'; # vendor autoload
+require_once __DIR__ .'/Functions.php';      # this scripts functions
+# The developer will be known about how to use this functions & scripts
+#
 
 // set to UTC
 date_default_timezone_set('UTC');

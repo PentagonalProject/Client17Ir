@@ -231,6 +231,14 @@ class Data
             ->execute();
     }
 
+    /**
+     * This function that set domain as has been registered via api
+     * if API from registrant call and return succeed , it must be call this method
+     *
+     * @param string $domainName the domain name (.ir domain name)
+     *
+     * @return bool|\Doctrine\DBAL\Driver\Statement|int|null returning integer if update success or no
+     */
     public function setAsRegisteredFromApi($domainName)
     {
         $exist = $this->isDomainExists($domainName);
@@ -252,6 +260,9 @@ class Data
     }
 
     /**
+     * Set the domain is not registered via PI Registrant,
+     *  This can be used if domain failed register to registrant
+     *
      * @param string $domainName
      *
      * @return bool|\Doctrine\DBAL\Driver\Statement|int|null

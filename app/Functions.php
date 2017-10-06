@@ -11,6 +11,8 @@ use PentagonalProject\Client17Ir\Core\DI;
 use PentagonalProject\Client17Ir\Core\TransportIR;
 
 /**
+ * The Whois Server Instance
+ * to use it just call @uses who()
  * @return WhoIs
  */
 function &who()
@@ -24,8 +26,10 @@ function &who()
 }
 
 /**
+ * Function to check if domain registered ot not
+ *
  * @param string $domainName
- * @return bool|null
+ * @return bool|null returning null if there was error or invalid response maybe limit or empty / failed result
  */
 function isDomainRegistered($domainName)
 {
@@ -37,6 +41,8 @@ function isDomainRegistered($domainName)
 }
 
 /**
+ * This is for cache
+ *
  * @return Cache
  */
 function cache()
@@ -49,6 +55,8 @@ function cache()
 }
 
 /**
+ * Saving cache
+ *
  * @param string $key
  * @param mixed $value
  * @param int $expire
@@ -61,6 +69,8 @@ function cachePut($key, $value, $expire = 3600)
 }
 
 /**
+ * Getting Cache data
+ *
  * @param string $key
  *
  * @return mixed|null
@@ -71,6 +81,8 @@ function cacheGet($key)
 }
 
 /**
+ * Checking cache if exists
+ *
  * @param string $key
  *
  * @return bool
@@ -81,6 +93,8 @@ function cacheExist($key)
 }
 
 /**
+ * Delete cache data
+ *
  * @param string $key
  *
  * @return bool|int
@@ -91,6 +105,8 @@ function cacheDelete($key)
 }
 
 /**
+ * This is database object
+ *
  * @return Db
  */
 function &db()
@@ -108,6 +124,8 @@ function &db()
 }
 
 /**
+ * This miscellaneous function to get list of IR Domain
+ *
  * @param TransportIR $transport
  *
  * @return array
@@ -149,6 +167,9 @@ function getDomainIRListToCheck(TransportIR $transport)
 }
 
 /**
+ * This miscellaneous function to get Whois result that saving into database
+ * that domain is registered or not the values of domain check @uses getDomainIRListToCheck()
+ *
  * @param array $domainToCheck
  * @param TransportIR $transport
  *
@@ -196,6 +217,9 @@ function getDomainWhoIsFromArrayIR(array $domainToCheck, TransportIR $transport)
 }
 
 /**
+ * This is get alexa RANK for certain domain,
+ * The values of $domainToCheck is from @uses getDomainWhoIsFromArrayIR()
+ *
  * @param array $domainToCheck
  * @param TransportIR $transport
  * @param bool $safe alexa detect unwanted traffic
@@ -256,11 +280,21 @@ function getAlexaRankFromArrayIR(array $domainToCheck, TransportIR $transport, $
 }
 
 /**
+ * Get google backlink from list domains of array
+ * example structure for value $domainList is
+ *
+ * array(
+ *   'domain.com',
+ *   'example.com',
+ *   'otherdomain.com'
+ *   ..... etc
+ * )
+ *
  * @param array $domainList
  * @param TransportIR $transport
  * @param bool $safe
  *
- * @return array
+ * @return array result will be return that domains succeed from checking backlink as array result
  */
 function getGoogleBackLink(array $domainList, TransportIR $transport, $safe = true)
 {
@@ -317,11 +351,22 @@ function getGoogleBackLink(array $domainList, TransportIR $transport, $safe = tr
 }
 
 /**
- * @param string|int $alexaRank
- * @param string $date
- * @param string|array $extensionAlexa
+ * Get domain data from database
  *
- * @return array  key as string domain value as boolean is has been registered or not
+ * @param string|int $alexaRank use null to get data with no check alexa rank,
+ *                              otherwise fill with numeric value / integer eg with 1 million is
+ *                              1000000 < integer 1 Million
+ * @param string $date          Date that get domain of stored on database
+ *                              eg to get data of today use php script
+ *                              date('Y-m-d');
+ *
+ * @param string|array $extensionAlexa  list of alexa rank to be check that use $alexaRank
+ *                                      valid extension only com,net,info,org
+ *                                      use ['com', 'net', 'org', 'info'] to check all rank mustbe
+ *                                      same or below on parameter $alexaRank
+ *
+ * @return array  key as string domain value as boolean is has been registered or not (this stored on database with colum : api_registered)
+ *      Please create custom function to save data on database as automation
  */
 function getDomainListIRAllRegisteredFromDatabase($alexaRank, $date = null, $extensionAlexa ='com')
 {
