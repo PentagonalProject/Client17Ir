@@ -2,6 +2,8 @@
 namespace PentagonalProject\Client17Ir\Core;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\BadResponseException;
+use function PentagonalProject\Client17Ir\who;
 use Psr\Http\Message\ResponseInterface;
 use Wa72\HtmlPageDom\HtmlPageCrawler;
 
@@ -90,7 +92,7 @@ class TransportIR
      */
     public function addVerbose($message, $withNewLine = true)
     {
-        if ($this->cliVerbose) {
+        if ($this->cliVerbose && php_sapi_name() == 'cli') {
             echo "{$message}";
             if ($withNewLine) {
                 echo "\n";
@@ -105,15 +107,16 @@ class TransportIR
         }
 
         $this->addVerbose("Requesting Captcha from whois ir.");
+        $client = clone $this->clientIR;
         try {
-            $response = $this->clientIR->get(self::IMAGE_URI);
+            $response = $client->get(self::IMAGE_URI);
             if ($response instanceof \Exception) {
                 throw $response;
             }
         } catch (\Exception $e) {
             if (preg_match('/timed?\s+out/i', $e->getMessage())) {
                 $this->addVerbose("Connection timeout. Retrying ....");
-                $response = $this->clientIR->get(self::IMAGE_URI);
+                $response = $client->get(self::IMAGE_URI);
             } else {
                 throw $e;
             }
@@ -389,6 +392,11 @@ class TransportIR
                 ) : $dateOld;
                 $date = @strtotime($dateOld);
                 $date = $date?: $dateOld;
+                $domainOne = html_entity_decode($domainOne);
+                if (!who()->getVerifier()->isDomain($domainOne)) {
+                    return;
+                }
+
                 $data[$domainOne] = @date('Y-m-d H:i:s', $date)?: date('Y-m-d H:i:s');
             }
 
@@ -407,6 +415,10 @@ class TransportIR
                 ) : $dateOld;
                 $date = @strtotime($dateOld);
                 $date = $date?: $dateOld;
+                $domainTwo = html_entity_decode($domainTwo);
+                if (!who()->getVerifier()->isDomain($domainTwo)) {
+                    return;
+                }
                 $data[$domainTwo] = @date('Y-m-d H:i:s', $date) ?: date('Y-m-d H:i:s');
             }
         });
@@ -457,5 +469,194 @@ class TransportIR
         } catch (\Exception $e) {
             throw $e;
         }
+    }
+
+    /**
+     * @param string $domainName
+     *
+     * @return array|null
+     */
+    public function getAlexa($domainName)
+    {
+        if (!is_string($domainName) || trim($domainName) == '') {
+            return null;
+        }
+        $domainName = trim(strtolower($domainName));
+        /**
+         * @var Cache $cache
+         */
+        $cache = DI::get(Cache::class);
+        $this->addVerbose("Checking Alexa Rank: {$domainName}");
+        $uri = 'https://www.alexa.com/siteinfo/' . $domainName;
+        $cacheKey = sha1($uri);
+        $data = $cache->get($cacheKey);
+        $isCache = false;
+        if (!is_string($data) || trim($data) == '') {
+            $client =  clone $this->clientIR;
+            $config = $client->getConfig();
+            $config['headers']['referer'] = 'https://www.alexa.com/';
+            try {
+                $response = $client->get($uri, $config);
+            } catch (\Exception $e) {
+                if (preg_match('/timed?\s+out/i', $e->getMessage())) {
+                    $this->addVerbose("Alexa Rank check time out. Retrying...");
+                    try {
+                        $response = $client->get($uri, $config);
+                    } catch (\Exception $e) {
+                        if ($e instanceof BadResponseException) {
+                            if ((int) $e->getResponse()->getStatusCode() === 403) {
+                                $this->addVerbose("Skipped Forbidden Result for: [ {$domainName} ]");
+                                return -1;
+                            }
+                        }
+                    }
+                }
+
+                if ($e instanceof BadResponseException) {
+                    if ((int) $e->getResponse()->getStatusCode() === 403) {
+                        $this->addVerbose("Skipped Forbidden Result for: [ {$domainName} ]");
+                        return -1;
+                    }
+                }
+            }
+
+            if ( ! isset($response) || ! $response instanceof ResponseInterface) {
+                $this->addVerbose("Skipped : [ {$domainName} ]");
+                return false;
+            }
+
+            $data = '';
+            $body = $response->getBody();
+            while ( ! $body->eof()) {
+                $data .= $body->getContents();
+            }
+            // add cache
+            $cache->put($cacheKey, $data, 3600*24);
+        } else {
+            $isCache = true;
+        }
+
+        $data   = HtmlPageCrawler::create($data);
+        $metric = $data->filter('.metrics-data');
+        if ($metric->count() < 1) {
+            unset($data, $metric);
+            return null;
+        }
+
+        $rank = trim($metric->first()->text());
+        $rank = $rank == '-' ? null : abs(preg_replace('/[^0-9]/', '', $rank));
+        $rank = $rank ? $rank : ($rank === null ? null : 0);
+
+        return [
+            'cache' => $isCache,
+            'result' => $rank
+        ];
+    }
+
+    public function getGoogleBackLink($domainName)
+    {
+        if (!is_string($domainName)) {
+            return null;
+        }
+        $domainName = trim(strtolower($domainName));
+        /**
+         * @var Cache $cache
+         */
+        $cache = DI::get(Cache::class);
+        $query = urlencode('backlink:'.$domainName);
+        $uri = 'https://www.google.com/search?q='.$query.'&num=100';
+        $cacheKey = sha1($uri);
+        $data = $cache->get($cacheKey);
+        $isCache = false;
+        if (!is_string($data) || trim($data) == '') {
+            $client =  clone $this->clientIR;
+            $config = $client->getConfig();
+            $config['headers']['referer'] = 'https://www.google.com/?gws_rd=cr&dcr=0';
+            try {
+                $response = $client->get($uri, $config);
+            } catch (\Exception $e) {
+                if (preg_match('/timed?\s+out/i', $e->getMessage())) {
+                    $this->addVerbose("Google Backlink Check time out. Retrying...");
+                    try {
+                        $response = $client->get($uri, $config);
+                    } catch (\Exception $e) {
+                        if ($e instanceof BadResponseException) {
+                            $body = (string) $e->getResponse()->getBody();
+                            if (stripos($body, 'Our systems have detected unusual') !== false
+                                || stripos($body, 'id="recaptcha"') !== false
+                            ) {
+                                $this->addVerbose("Skipped Unwanted Result From Google for: {$domainName}");
+                                return -1;
+                            }
+                        }
+                    }
+                } else {
+                    if ($e instanceof BadResponseException) {
+                        $body = (string) $e->getResponse()->getBody();
+                        if (stripos($body, 'Our systems have detected unusual') !== false
+                            || stripos($body, 'id="recaptcha"') !== false
+                        ) {
+                            $this->addVerbose("Skipped Unwanted Result From Google for: [ {$domainName} ]");
+                            return -1;
+                        }
+                    }
+                }
+            }
+
+            if ( ! isset($response) || ! $response instanceof ResponseInterface) {
+                $this->addVerbose("Skipped : [ {$domainName} ]");
+                return false;
+            }
+
+            $data = '';
+            $body = $response->getBody();
+            while ( ! $body->eof()) {
+                $data .= $body->getContents();
+            }
+
+            // add cache
+            $cache->put($cacheKey, $data, 3600*24);
+        } else {
+            $isCache = true;
+        }
+
+        $crawler  = HtmlPageCrawler::create($data);
+        $crawler  = $crawler->filter('[data-hveid]');
+        if ($crawler->count() < 1) {
+            return null;
+        }
+
+        $backLink = [];
+        $crawler->each(function (HtmlPageCrawler $crawler) use (&$backLink) {
+            $crawler = $crawler->filter('h3');
+            if ($crawler->count() < 1) {
+                return;
+            }
+            $crawler = $crawler->first();
+            if ($crawler->count() < 1) {
+                return;
+            }
+            $crawler = $crawler->filter('a[href]');
+            if ($crawler->count() < 1) {
+                return;
+            }
+
+            /**
+             * @var HtmlPageCrawler $crawler
+             */
+            try {
+                $href = $crawler->getAttribute('href');
+                if ($href && is_string($href)) {
+                    $backLink[] = $href;
+                }
+            } catch (\Exception $e) {
+                // pass
+            }
+        });
+
+        return [
+            'cache' => $isCache,
+            'result' => $backLink
+        ];
     }
 }

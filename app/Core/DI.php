@@ -28,6 +28,7 @@ final class DI
      */
     private function __construct()
     {
+        @date_default_timezone_set('UTC');
     }
 
     public static function once(array $config)
