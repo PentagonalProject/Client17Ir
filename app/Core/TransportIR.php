@@ -520,14 +520,14 @@ class TransportIR
                 }
             }
 
-            if ( ! isset($response) || ! $response instanceof ResponseInterface) {
+            if (! isset($response) || ! $response instanceof ResponseInterface) {
                 $this->addVerbose("Skipped : [ {$domainName} ]");
                 return false;
             }
 
             $data = '';
             $body = $response->getBody();
-            while ( ! $body->eof()) {
+            while (! $body->eof()) {
                 $data .= $body->getContents();
             }
             // add cache
@@ -603,14 +603,14 @@ class TransportIR
                 }
             }
 
-            if ( ! isset($response) || ! $response instanceof ResponseInterface) {
+            if (! isset($response) || ! $response instanceof ResponseInterface) {
                 $this->addVerbose("Skipped : [ {$domainName} ]");
                 return false;
             }
 
             $data = '';
             $body = $response->getBody();
-            while ( ! $body->eof()) {
+            while (! $body->eof()) {
                 $data .= $body->getContents();
             }
 

@@ -142,7 +142,7 @@ function getDomainIRListToCheck(TransportIR $transport)
      */
     $domainToCheck = [];
     $transport->addVerbose('Add domain data into database');
-    foreach($domainList as $domain => $date) {
+    foreach ($domainList as $domain => $date) {
         $domain = trim(strtolower($domain));
         if ($domain == '') {
             continue;
@@ -365,16 +365,17 @@ function getGoogleBackLink(array $domainList, TransportIR $transport, $safe = tr
  *                                      use ['com', 'net', 'org', 'info'] to check all rank mustbe
  *                                      same or below on parameter $alexaRank
  *
- * @return array  key as string domain value as boolean is has been registered or not (this stored on database with colum : api_registered)
+ * @return array  key as string domain value as boolean is has been
+ *      registered or not (this stored on database with colum : api_registered)
  *      Please create custom function to save data on database as automation
  */
-function getDomainListIRAllRegisteredFromDatabase($alexaRank, $date = null, $extensionAlexa ='com')
+function getDomainListIRAllRegisteredFromDatabase($alexaRank, $date = null, $extensionAlexa = 'com')
 {
     if (is_null($date) || is_bool($date)) {
         $date = date('Y-m-d');
     }
     if ($alexaRank !== null) {
-        if ( ! is_string($date) || ! is_numeric($alexaRank)) {
+        if (! is_string($date) || ! is_numeric($alexaRank)) {
             return [];
         }
         $alexaRank = (int)abs($alexaRank);
@@ -407,12 +408,12 @@ function getDomainListIRAllRegisteredFromDatabase($alexaRank, $date = null, $ext
         if (is_string($extensionAlexa)) {
             $extensionAlexa = [$extensionAlexa];
         }
-        if ( ! is_array($extensionAlexa)) {
+        if (! is_array($extensionAlexa)) {
             $extensionAlexa = null;
         } else {
             $tmpExtension = $extensionAlexa;
             foreach ($tmpExtension as $ext) {
-                if ( ! is_string($ext)) {
+                if (! is_string($ext)) {
                     continue;
                 }
                 $ext = trim(strtolower($ext));

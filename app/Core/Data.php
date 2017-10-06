@@ -140,7 +140,7 @@ class Data
             return null;
         }
 
-        foreach($data as $key => $value) {
+        foreach ($data as $key => $value) {
             if (!in_array($key, $datArray)) {
                 unset($data[$key]);
                 continue;
@@ -162,7 +162,7 @@ class Data
                 $data[self::COLUMN_DATE_CREATED] = is_string($data[self::COLUMN_DATE_CREATED])
                     ? $data[self::COLUMN_DATE_CREATED]
                     : null;
-                if ( $data[self::COLUMN_DATE_CREATED] === null || ! @strtotime($data[self::COLUMN_DATE_CREATED])) {
+                if ($data[self::COLUMN_DATE_CREATED] === null || ! @strtotime($data[self::COLUMN_DATE_CREATED])) {
                     unset($data[self::COLUMN_DATE_CREATED]);
                 }
             }
@@ -171,7 +171,7 @@ class Data
                 $data[self::COLUMN_DATE_FREE] = is_string($data[self::COLUMN_DATE_FREE])
                     ? $data[self::COLUMN_DATE_FREE]
                     : null;
-                if ( $data[self::COLUMN_DATE_FREE] === null || ! @strtotime($data[self::COLUMN_DATE_FREE])) {
+                if ($data[self::COLUMN_DATE_FREE] === null || ! @strtotime($data[self::COLUMN_DATE_FREE])) {
                     unset($data[self::COLUMN_DATE_FREE]);
                 }
             }
