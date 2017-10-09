@@ -334,6 +334,8 @@ class TransportIR
         return $data;
     }
 
+    protected $countRecord = 0;
+
     /**
      * @param string $stringData
      *
@@ -362,6 +364,7 @@ class TransportIR
         $crawl = HtmlPageCrawler::create($stringData);
         $crawl = $crawl->filter('.listing-table');
         if ($crawl->count() < 2) {
+            $this->countRecord += 1;
             $this->addVerbose("Result is empty!");
             return $data;
         }
@@ -456,9 +459,15 @@ class TransportIR
             }
 
             $data = $this->requestDataFromIr(trim($resolved));
+            $result = $this->parse($data);
+            // retry
+            if (empty($result) && $this->countRecord === 1) {
+                $this->addVerbose("Requesting domain list is empty. Retrying once ....!");
+                return $this->getWebPageDomainList();
+            }
+
             // temp
             $this->addVerbose("Requesting domain list with existing succeed!");
-            $result = $this->parse($data);
             if (!empty($result)) {
                 if (!is_int($this->cacheTime)) {
                     $this->cacheTime = 86400;
@@ -474,7 +483,7 @@ class TransportIR
     /**
      * @param string $domainName
      *
-     * @return array|null
+     * @return array|null|int
      */
     public function getAlexa($domainName)
     {

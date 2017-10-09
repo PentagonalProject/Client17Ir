@@ -7,7 +7,7 @@
         "ext-curl": "*",
         "ext-intl": "*",
         "ext-pdo" : "*",
-        "pentagonal/whois": "dev-master",
+        "pentagonal/whois": "^1.0",
         "guzzlehttp/guzzle": "^6",
         "doctrine/dbal": "^2.5",
         "php-di/php-di": "^5",
